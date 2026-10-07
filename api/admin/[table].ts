@@ -13,7 +13,10 @@ async function handle(request: Request, run: (name: string) => Promise<Response>
   } catch (err) {
     if (err instanceof ValidationError) return error(400, err.message);
     // Violation de contrainte Postgres (valeur hors liste, format d'heure…)
-    if ((err as { code?: string }).code === '23514') return error(400, 'Valeur refusée : vérifiez les champs.');
+    const code = (err as { code?: string }).code;
+    if (code === '23514') return error(400, 'Valeur refusée : vérifiez les champs.');
+    // Champ obligatoire vide (NOT NULL)
+    if (code === '23502') return error(400, 'Un champ obligatoire est vide.');
     return serverError(err);
   }
 }

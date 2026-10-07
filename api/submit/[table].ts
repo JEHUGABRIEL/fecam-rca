@@ -15,7 +15,7 @@ export async function POST(request: Request) {
 
   try {
     const values: Record<string, unknown> = {};
-    for (const col of def.publicInsert) values[col] = coerce({ name: col, max: col === 'message' || col === 'presentation' ? 2000 : 200 }, body[col]);
+    for (const col of def.publicInsert) values[col] = coerce({ name: col, max: col === 'message' || col === 'presentation' ? 2000 : 200, nullable: true }, body[col]);
     for (const col of publicRequired[name] ?? []) {
       if (values[col] === null) return error(400, 'Merci de remplir les champs obligatoires.');
     }

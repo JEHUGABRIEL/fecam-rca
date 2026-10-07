@@ -4,7 +4,7 @@ import { formatShortDate } from '../utils/date';
 
 // Carte d'une sortie : pochette, titre, artiste, liens d'écoute
 export function ReleaseCard({ release }: {release: Release;}) {
-  const listen = release.youtubeUrl ?? release.spotifyUrl ?? undefined;
+  const listen = release.youtubeUrl || release.spotifyUrl || undefined;
 
   return (
     <article className="group w-[70%] shrink-0 snap-start sm:w-60 lg:w-[17rem]">

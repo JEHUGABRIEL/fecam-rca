@@ -9,6 +9,8 @@ interface Column {
   required?: boolean;
   // Longueur maximale pour les champs texte (défaut : 5000)
   max?: number;
+  // Colonne acceptant NULL : un champ vide y est enregistré comme NULL (sinon comme '')
+  nullable?: boolean;
 }
 
 export interface TableDef {
@@ -58,7 +60,7 @@ export const tables: Record<string, TableDef> = {
     t('kind', true),
     t('genre', true, 60),
     t('city', true, 100),
-    { name: 'image', type: 'url' },
+    { name: 'image', type: 'url', nullable: true },
     t('bio', true, 1000),
     { name: 'featured', type: 'bool' }],
 
@@ -72,8 +74,8 @@ export const tables: Record<string, TableDef> = {
     t('artist', true, 120),
     { name: 'cover', type: 'url' },
     { name: 'release_date', type: 'date', required: true },
-    { name: 'youtube_url', type: 'url' },
-    { name: 'spotify_url', type: 'url' }],
+    { name: 'youtube_url', type: 'url', nullable: true },
+    { name: 'spotify_url', type: 'url', nullable: true }],
 
     adminSelect: 'id, title, artist, cover, release_date::text as release_date, youtube_url, spotify_url',
     publicSelect:
@@ -139,9 +141,14 @@ const columnTypes: Record<string, ColType> = { seats: 'int', email: 'text' };
 export class ValidationError extends Error {}
 
 // Convertit et vérifie une valeur reçue en JSON selon le type de colonne
-export function coerce(col: Column | { name: string; type?: ColType; max?: number }, raw: unknown): unknown {
+export function coerce(col: Column | { name: string; type?: ColType; max?: number; nullable?: boolean }, raw: unknown): unknown {
   const type = col.type ?? columnTypes[col.name] ?? 'text';
-  if (raw === undefined || raw === null || raw === '') return type === 'bool' ? false : null;
+  if (raw === undefined || raw === null || (typeof raw === 'string' && raw.trim() === '')) {
+    if (type === 'bool') return false;
+    // Texte et liens vides : '' pour les colonnes NOT NULL DEFAULT '', NULL pour les facultatives
+    if ((type === 'text' || type === 'url') && !col.nullable) return '';
+    return null;
+  }
   switch (type) {
     case 'bool':
       return raw === true || raw === 'true';
