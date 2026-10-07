@@ -1,10 +1,23 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { api, ApiError, sendJson } from '../lib/api';
 
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+}
+
+interface AuthResponse {
+  authenticated: boolean;
+  user: AdminUser | null;
+}
+
 interface AdminAuthValue {
   authenticated: boolean;
+  user: AdminUser | null;
   loading: boolean;
-  signIn: (password: string) => Promise<string | null>;
+  signIn: (email: string, password: string) => Promise<string | null>;
+  setUser: (user: AdminUser) => void;
   signOut: () => Promise<void>;
   // Appelé quand l'API répond 401 : renvoie vers la page de connexion
   expire: () => void;
@@ -13,20 +26,21 @@ interface AdminAuthValue {
 const AdminAuthContext = createContext<AdminAuthValue | null>(null);
 
 export function AdminAuthProvider({ children }: {children: React.ReactNode;}) {
-  const [authenticated, setAuthenticated] = useState(false);
+  const [user, setUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const authenticated = Boolean(user);
 
   useEffect(() => {
-    api<{authenticated: boolean;}>('/api/admin/auth').
-    then((r) => setAuthenticated(r.authenticated)).
-    catch(() => setAuthenticated(false)).
+    api<AuthResponse>('/api/admin/auth').
+    then((r) => setUser(r.user)).
+    catch(() => setUser(null)).
     finally(() => setLoading(false));
   }, []);
 
-  const signIn = async (password: string) => {
+  const signIn = async (email: string, password: string) => {
     try {
-      await sendJson('/api/admin/auth', 'POST', { password });
-      setAuthenticated(true);
+      const r = (await sendJson('/api/admin/auth', 'POST', { email, password })) as unknown as AuthResponse;
+      setUser(r.user);
       return null;
     } catch (err) {
       return err instanceof ApiError ? err.message : 'Connexion impossible.';
@@ -35,13 +49,13 @@ export function AdminAuthProvider({ children }: {children: React.ReactNode;}) {
 
   const signOut = async () => {
     await sendJson('/api/admin/auth', 'DELETE').catch(() => undefined);
-    setAuthenticated(false);
+    setUser(null);
   };
 
-  const expire = useCallback(() => setAuthenticated(false), []);
+  const expire = useCallback(() => setUser(null), []);
 
   return (
-    <AdminAuthContext.Provider value={{ authenticated, loading, signIn, signOut, expire }}>
+    <AdminAuthContext.Provider value={{ authenticated, user, loading, signIn, setUser, signOut, expire }}>
       {children}
     </AdminAuthContext.Provider>);
 

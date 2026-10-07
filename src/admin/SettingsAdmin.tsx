@@ -46,7 +46,7 @@ export function SettingsAdmin() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="font-poster text-4xl uppercase">Réglages</h1>
+      <h1 className="font-poster text-4xl uppercase">Réseaux sociaux</h1>
       <p className="mt-1 text-sm text-fecam-black/60">Réseaux sociaux affichés dans le pied de page. Laissez vide pour masquer un réseau.</p>
 
       <form onSubmit={handleSubmit} className="mt-8 rounded-2xl border border-fecam-black/10 bg-white p-6">

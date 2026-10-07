@@ -24,6 +24,8 @@ export function NewsAdmin() {
       title="Actualités"
       description="Articles affichés sur la page Actualités et en avant sur la page d’accueil."
       table="news"
+      itemLabel="un article"
+      describe={(n) => n.title}
       fields={fields}
       columns={[
       { key: 'title', label: 'Titre' },

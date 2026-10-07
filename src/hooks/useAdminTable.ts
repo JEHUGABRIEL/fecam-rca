@@ -59,7 +59,8 @@ export function useAdminTable<T extends {id: string;}>(table: string) {
     refresh,
     create: (values: Record<string, unknown>) => run('POST', values),
     update: (id: string, values: Record<string, unknown>) => run('PATCH', values, id),
-    remove: (id: string) => run('DELETE', undefined, id)
+    remove: (id: string) => run('DELETE', undefined, id),
+    clearError: () => setError(null)
   };
 }
 

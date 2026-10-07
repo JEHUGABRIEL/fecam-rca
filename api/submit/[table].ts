@@ -1,5 +1,6 @@
 import { query } from '../_lib/db.js';
 import { error, json, lastSegment, readJson, serverError } from '../_lib/http.js';
+import { allow, clientIp, forbiddenOrigin, sameOrigin, tooMany } from '../_lib/security.js';
 import { coerce, ident, publicRequired, tables, ValidationError } from '../_lib/tables.js';
 
 // POST /api/submit/:table — formulaires publics (adhésion, contact, réservation, dédicace, newsletter)
@@ -7,6 +8,7 @@ export async function POST(request: Request) {
   const name = lastSegment(request);
   const def = tables[name];
   if (!def?.publicInsert) return error(404, 'Formulaire inconnu');
+  if (!sameOrigin(request)) return forbiddenOrigin();
 
   const body = await readJson(request);
   if (!body) return error(400, 'Requête invalide');
@@ -29,6 +31,9 @@ export async function POST(request: Request) {
       if (event) values.event_title = event.title;else
       values.event_id = null;
     }
+
+    // 5 envois par formulaire et par IP toutes les 10 minutes
+    if (!(await allow(`submit:${name}:${clientIp(request)}`, 5, 600))) return tooMany();
 
     const cols = Object.keys(values);
     const conflict = name === 'newsletter_subscribers' ? ' on conflict (email) do nothing' : '';

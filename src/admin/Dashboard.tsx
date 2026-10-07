@@ -5,17 +5,17 @@ import { useAdminTable } from '../hooks/useAdminTable';
 interface Row {id: string;status?: string;}
 
 const content = [
-{ table: 'events', label: 'Événements', to: '/admin/evenements' },
-{ table: 'news', label: 'Actualités', to: '/admin/actualites' },
-{ table: 'releases', label: 'Sorties', to: '/admin/sorties' },
-{ table: 'artists', label: 'Artistes', to: '/admin/artistes' }];
+{ table: 'events', label: 'Événements', to: '/admin/evenements/a-venir' },
+{ table: 'news', label: 'Actualités', to: '/admin/editorial/actualites' },
+{ table: 'releases', label: 'Sorties', to: '/admin/editorial/sorties' },
+{ table: 'artists', label: 'Artistes', to: '/admin/editorial/artistes' }];
 
 
 const inbox = [
-{ table: 'membership_requests', label: 'Adhésions', to: '/admin/adhesions', todo: 'nouveau' },
-{ table: 'contact_messages', label: 'Messages', to: '/admin/messages', todo: 'non lu' },
-{ table: 'reservations', label: 'Réservations', to: '/admin/reservations', todo: 'nouvelle' },
-{ table: 'dedications', label: 'Dédicaces', to: '/admin/dedicaces', todo: 'nouvelle' }];
+{ table: 'membership_requests', label: 'Adhésions', to: '/admin/membres/adhesions', todo: 'nouveau' },
+{ table: 'contact_messages', label: 'Messages', to: '/admin/membres/messages', todo: 'non lu' },
+{ table: 'reservations', label: 'Réservations', to: '/admin/evenements/reservations', todo: 'nouvelle' },
+{ table: 'dedications', label: 'Dédicaces', to: '/admin/radio/dedicaces', todo: 'nouvelle' }];
 
 
 function Card({ table, label, to, todo }: {table: string;label: string;to: string;todo?: string;}) {

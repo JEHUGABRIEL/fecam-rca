@@ -2,6 +2,9 @@ import { useMemo, useState } from 'react';
 import { MailIcon, PhoneIcon, Trash2Icon } from 'lucide-react';
 import { useAdminTable } from '../hooks/useAdminTable';
 import { FilterChips } from '../components/FilterChips';
+import { useConfirm } from './ui/ConfirmDialog';
+import { IconButton } from './ui/IconButton';
+import { Pagination, usePagination } from './ui/Pagination';
 
 type Row = {id: string;status?: string;created_at: string;} & Record<string, unknown>;
 
@@ -23,10 +26,17 @@ new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'short', year: 'n
 export function InboxPage({ title, description, table, statuses, heading, subheading, body }: InboxConfig) {
   const { data, loading, error, update, remove } = useAdminTable<Row>(table);
   const [filter, setFilter] = useState('Tous');
+  const confirm = useConfirm();
   const rows = useMemo(() => filter === 'Tous' ? data : data.filter((r) => r.status === filter), [data, filter]);
+  const pagination = usePagination(rows, 8);
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Supprimer définitivement cet élément ?')) await remove(id);
+  const handleDelete = async (r: Row) => {
+    const ok = await confirm({
+      title: 'Supprimer cet envoi ?',
+      message: `L’envoi de « ${heading(r)} » sera supprimé définitivement. Cette action est irréversible.`,
+      confirmLabel: 'Supprimer'
+    });
+    if (ok) await remove(r.id);
   };
 
   return (
@@ -52,7 +62,7 @@ export function InboxPage({ title, description, table, statuses, heading, subhea
         rows.length === 0 ?
         <p className="rounded-2xl border border-dashed border-fecam-black/15 p-8 text-center text-sm text-fecam-black/50">Rien ici pour le moment.</p> :
 
-        rows.map((r) => {
+        pagination.pageItems.map((r) => {
           const fresh = statuses && r.status === statuses[0];
           const email = typeof r.email === 'string' ? r.email : null;
           const phone = typeof r.phone === 'string' ? r.phone : null;
@@ -82,9 +92,9 @@ export function InboxPage({ title, description, table, statuses, heading, subhea
                         {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
                       </select>
                   }
-                    <button type="button" onClick={() => handleDelete(r.id)} aria-label="Supprimer" className="rounded-full p-2 text-red-700 hover:bg-red-50">
+                    <IconButton label="Supprimer" tone="danger" onClick={() => handleDelete(r)}>
                       <Trash2Icon className="h-4 w-4" />
-                    </button>
+                    </IconButton>
                   </div>
                 </div>
                 {body?.(r) && <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-fecam-black/75">{body(r)}</p>}
@@ -93,6 +103,14 @@ export function InboxPage({ title, description, table, statuses, heading, subhea
         })
         }
       </div>
+      <Pagination
+        page={pagination.page}
+        pageCount={pagination.pageCount}
+        onChange={pagination.setPage}
+        from={pagination.from}
+        to={pagination.to}
+        total={pagination.total} />
+      
     </div>);
 
 }
@@ -142,3 +160,9 @@ export const inboxes: Record<string, InboxConfig> = {
     heading: (r) => String(r.email)
   }
 };
+
+export const MembershipInbox = () => <InboxPage {...inboxes.adhesions} />;
+export const MessagesInbox = () => <InboxPage {...inboxes.messages} />;
+export const ReservationsInbox = () => <InboxPage {...inboxes.reservations} />;
+export const DedicationsInbox = () => <InboxPage {...inboxes.dedicaces} />;
+export const NewsletterInbox = () => <InboxPage {...inboxes.newsletter} />;

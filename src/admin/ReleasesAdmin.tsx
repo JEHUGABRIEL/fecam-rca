@@ -25,6 +25,8 @@ export function ReleasesAdmin() {
       title="Dernières sorties"
       description="Nouveaux titres affichés sur l’accueil, avec leurs liens d’écoute (au moins un des deux liens est conseillé)."
       table="releases"
+      itemLabel="une sortie"
+      describe={(r) => r.title}
       fields={fields}
       columns={[
       {

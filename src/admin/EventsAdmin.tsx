@@ -1,4 +1,5 @@
 import { eventCategories } from '../data/events';
+import { formatDateRange, isPastDate } from '../utils/date';
 import { AdminCrudPage, FieldDef } from './AdminCrudPage';
 
 interface EventRow {
@@ -30,19 +31,33 @@ const fields: FieldDef[] = [
 { key: 'description', label: 'Description complète', type: 'textarea', fullWidth: true, required: true }];
 
 
-export function EventsAdmin() {
+const isPast = (e: EventRow) => isPastDate(e.end_date || e.date);
+
+function EventsTable({ past }: {past: boolean;}) {
   return (
     <AdminCrudPage<EventRow>
-      title="Événements"
-      description="Concerts, festivals, formations et concours affichés dans l’agenda du site."
+      title={past ? 'Événements passés' : 'Événements à venir'}
+      description={
+      past ?
+      'Archives de l’agenda, toujours consultables sur le site (onglet « Passés »).' :
+      'Concerts, festivals, formations et concours affichés dans l’agenda et sur l’accueil.'
+      }
       table="events"
       fields={fields}
+      filter={(e) => isPast(e) === past}
+      itemLabel="un événement"
+      describe={(e) => e.title}
+      emptyLabel={past ? 'Aucun événement passé.' : 'Aucun événement à venir : ajoutez le prochain rendez-vous.'}
       columns={[
+      { key: 'image', label: '', render: (e) => e.image ? <img src={e.image} alt="" className="h-10 w-14 rounded-lg object-cover" /> : null },
       { key: 'title', label: 'Titre' },
       { key: 'category', label: 'Catégorie' },
-      { key: 'date', label: 'Date' },
+      { key: 'date', label: 'Date', render: (e) => formatDateRange(e.date, e.end_date || undefined) },
       { key: 'city', label: 'Ville' }]
       } />);
 
 
 }
+
+export const UpcomingEventsAdmin = () => <EventsTable past={false} />;
+export const PastEventsAdmin = () => <EventsTable past />;

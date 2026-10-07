@@ -173,7 +173,7 @@ export function coerce(col: Column | { name: string; type?: ColType; max?: numbe
     case 'url':{
         const s = String(raw).trim();
         // URL absolue http(s) ou chemin local du site (/image.jpg)
-        if (!/^(https?:\/\/|\/)/.test(s) || s.length > 1000) throw new ValidationError(`${col.name} : lien invalide`);
+        if (!/^(https?:\/\/[^\s/]|\/(?!\/))/.test(s) || /\s/.test(s) || s.length > 1000) throw new ValidationError(`${col.name} : lien invalide`);
         return s;
       }
     default:{

@@ -1,8 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { ImageUpIcon, Loader2Icon, PencilIcon, PlusIcon, SearchIcon, Trash2Icon, XIcon } from 'lucide-react';
+import { ImageUpIcon, Loader2Icon, PencilIcon, PlusIcon, SearchIcon, Trash2Icon } from 'lucide-react';
 import { uploadImage, useAdminTable } from '../hooks/useAdminTable';
 import { ApiError } from '../lib/api';
+import { useConfirm } from './ui/ConfirmDialog';
+import { IconButton } from './ui/IconButton';
+import { Modal } from './ui/Modal';
+import { Pagination, usePagination } from './ui/Pagination';
 
 export interface FieldDef {
   key: string;
@@ -32,6 +35,13 @@ interface AdminCrudPageProps<T extends {id: string;}> {
   toRow?: (values: Record<string, string>) => Record<string, unknown>;
   // Transforme une ligne existante en valeurs texte pour pré-remplir le formulaire
   fromRow?: (row: T) => Record<string, string>;
+  // Sous-ensemble affiché (ex. événements à venir / passés)
+  filter?: (row: T) => boolean;
+  // Libellé de l'élément au singulier, pour les titres de modale (« un événement »)
+  itemLabel?: string;
+  // Ligne affichée dans la confirmation de suppression
+  describe?: (row: T) => string;
+  emptyLabel?: string;
 }
 
 export const inputClass =
@@ -85,8 +95,21 @@ function ImageField({ id, value, onChange }: {id: string;value: string;onChange:
 
 }
 
-export function AdminCrudPage<T extends {id: string;}>({ title, description, table, fields, columns, toRow, fromRow }: AdminCrudPageProps<T>) {
-  const { data, loading, saving, error, create, update, remove } = useAdminTable<T>(table);
+export function AdminCrudPage<T extends {id: string;}>({
+  title,
+  description,
+  table,
+  fields,
+  columns,
+  toRow,
+  fromRow,
+  filter,
+  itemLabel = 'un élément',
+  describe,
+  emptyLabel = 'Aucun élément pour le moment.'
+}: AdminCrudPageProps<T>) {
+  const { data, loading, saving, error, create, update, remove, clearError } = useAdminTable<T>(table);
+  const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -94,15 +117,18 @@ export function AdminCrudPage<T extends {id: string;}>({ title, description, tab
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return data;
-    return data.filter((row) => Object.values(row as Record<string, unknown>).some((v) => String(v ?? '').toLowerCase().includes(q)));
-  }, [data, search]);
+    const scoped = filter ? data.filter(filter) : data;
+    if (!q) return scoped;
+    return scoped.filter((row) => Object.values(row as Record<string, unknown>).some((v) => String(v ?? '').toLowerCase().includes(q)));
+  }, [data, search, filter]);
+  const pagination = usePagination(rows, 10);
 
   const set = (key: string, value: string) => setValues((v) => ({ ...v, [key]: value }));
 
   const openCreate = () => {
     setEditingId(null);
     setValues(Object.fromEntries(fields.map((f) => [f.key, ''])));
+    clearError();
     setOpen(true);
   };
 
@@ -110,6 +136,7 @@ export function AdminCrudPage<T extends {id: string;}>({ title, description, tab
     setEditingId(row.id);
     const raw = fromRow ? fromRow(row) : (row as unknown as Record<string, unknown>);
     setValues(Object.fromEntries(fields.map((f) => [f.key, raw[f.key] === true ? 'true' : String(raw[f.key] ?? '')])));
+    clearError();
     setOpen(true);
   };
 
@@ -123,9 +150,13 @@ export function AdminCrudPage<T extends {id: string;}>({ title, description, tab
     if (ok) setOpen(false);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Supprimer définitivement cet élément ?')) return;
-    await remove(id);
+  const handleDelete = async (row: T) => {
+    const ok = await confirm({
+      title: 'Supprimer cet élément ?',
+      message: `${describe ? `« ${describe(row)} » sera` : 'Cet élément sera'} supprimé définitivement. Cette action est irréversible.`,
+      confirmLabel: 'Supprimer'
+    });
+    if (ok) await remove(row.id);
   };
 
   return (
@@ -136,7 +167,7 @@ export function AdminCrudPage<T extends {id: string;}>({ title, description, tab
           {description && <p className="mt-1 max-w-xl text-sm text-fecam-black/60">{description}</p>}
         </div>
         <button type="button" onClick={openCreate} className="btn-dark !py-2.5">
-          <PlusIcon className="h-4 w-4" /> Ajouter
+          <PlusIcon className="h-4 w-4" /> Ajouter {itemLabel}
         </button>
       </div>
 
@@ -159,16 +190,16 @@ export function AdminCrudPage<T extends {id: string;}>({ title, description, tab
           <thead className="border-b border-fecam-black/10 text-xs uppercase tracking-[0.12em] text-fecam-black/50">
             <tr>
               {columns.map((c) => <th key={c.key} className="px-4 py-3 font-semibold">{c.label}</th>)}
-              <th className="px-4 py-3" />
+              <th className="px-4 py-3 text-right font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-fecam-black/[0.06]">
             {loading ?
             <tr><td className="px-4 py-8 text-fecam-black/50" colSpan={columns.length + 1}>Chargement…</td></tr> :
             rows.length === 0 ?
-            <tr><td className="px-4 py-8 text-fecam-black/50" colSpan={columns.length + 1}>{search ? 'Aucun résultat.' : 'Aucun élément pour le moment.'}</td></tr> :
+            <tr><td className="px-4 py-8 text-fecam-black/50" colSpan={columns.length + 1}>{search ? 'Aucun résultat.' : emptyLabel}</td></tr> :
 
-            rows.map((row) =>
+            pagination.pageItems.map((row) =>
             <tr key={row.id} className="transition-colors hover:bg-fecam-paper">
                   {columns.map((c) =>
               <td key={c.key} className="max-w-xs truncate px-4 py-3">
@@ -177,12 +208,12 @@ export function AdminCrudPage<T extends {id: string;}>({ title, description, tab
               )}
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
-                      <button type="button" onClick={() => openEdit(row)} aria-label="Modifier" className="rounded-full p-2 hover:bg-fecam-black/5">
+                      <IconButton label="Modifier" onClick={() => openEdit(row)}>
                         <PencilIcon className="h-4 w-4" />
-                      </button>
-                      <button type="button" onClick={() => handleDelete(row.id)} aria-label="Supprimer" className="rounded-full p-2 text-red-700 hover:bg-red-50">
+                      </IconButton>
+                      <IconButton label="Supprimer" tone="danger" onClick={() => handleDelete(row)}>
                         <Trash2Icon className="h-4 w-4" />
-                      </button>
+                      </IconButton>
                     </div>
                   </td>
                 </tr>
@@ -191,89 +222,83 @@ export function AdminCrudPage<T extends {id: string;}>({ title, description, tab
           </tbody>
         </table>
       </div>
+      <Pagination
+        page={pagination.page}
+        pageCount={pagination.pageCount}
+        onChange={pagination.setPage}
+        from={pagination.from}
+        to={pagination.to}
+        total={pagination.total} />
+      
 
-      {/* Panneau d'édition latéral */}
-      <AnimatePresence>
-        {open &&
+      {/* Ajout / modification en modale */}
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        busy={saving}
+        size="lg"
+        title={editingId ? `Modifier ${itemLabel}` : `Ajouter ${itemLabel}`}
+        description={`${title} · les champs marqués * sont obligatoires.`}
+        footer={
         <>
-            <motion.div
-            className="fixed inset-0 z-40 bg-fecam-black/40 backdrop-blur-[2px]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setOpen(false)} />
-
-            <motion.form
-            onSubmit={handleSubmit}
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-xl flex-col bg-fecam-paper shadow-2xl"
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}>
-
-              <div className="flex items-center justify-between border-b border-fecam-black/10 px-6 py-5">
-                <h2 className="font-display text-xl font-bold">{editingId ? 'Modifier' : 'Ajouter'} · {title}</h2>
-                <button type="button" onClick={() => setOpen(false)} aria-label="Fermer" className="rounded-full p-2 hover:bg-fecam-black/5">
-                  <XIcon className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="grid flex-1 content-start gap-5 overflow-y-auto px-6 py-6 sm:grid-cols-2">
-                {fields.map((f) =>
-              <div key={f.key} className={f.fullWidth || f.type === 'textarea' || f.type === 'image' ? 'sm:col-span-2' : ''}>
-                    {f.type === 'checkbox' ?
-                <label className="flex items-center gap-3 text-sm font-medium" htmlFor={`f-${f.key}`}>
-                        <input
-                    id={`f-${f.key}`}
-                    type="checkbox"
-                    checked={values[f.key] === 'true'}
-                    onChange={(e) => set(f.key, e.target.checked ? 'true' : '')}
-                    className="h-4 w-4 accent-fecam-orange" />
-
-                        {f.label}
-                      </label> :
-
-                <label className="text-sm font-medium text-fecam-black/80" htmlFor={`f-${f.key}`}>
-                        {f.label}
-                        {f.required && <span className="text-fecam-orange"> *</span>}
-                      </label>
-                }
-                    {f.type === 'textarea' ?
-                <textarea id={`f-${f.key}`} required={f.required} rows={4} value={values[f.key] ?? ''} onChange={(e) => set(f.key, e.target.value)} className={inputClass} /> :
-                f.type === 'select' ?
-                <select id={`f-${f.key}`} required={f.required} value={values[f.key] ?? ''} onChange={(e) => set(f.key, e.target.value)} className={inputClass}>
-                        <option value="" disabled>Choisir…</option>
-                        {f.options?.map((o) => <option key={o} value={o}>{o}</option>)}
-                      </select> :
-                f.type === 'image' ?
-                <ImageField id={`f-${f.key}`} value={values[f.key] ?? ''} onChange={(v) => set(f.key, v)} /> :
-                f.type === 'checkbox' ?
-                null :
-
-                <input
-                  id={`f-${f.key}`}
-                  type={f.type ?? 'text'}
-                  required={f.required}
-                  placeholder={f.placeholder}
-                  value={values[f.key] ?? ''}
-                  onChange={(e) => set(f.key, e.target.value)}
-                  className={inputClass} />
-
-                }
-                    {f.hint && <p className="mt-1 text-xs text-fecam-black/50">{f.hint}</p>}
-                  </div>
-              )}
-              </div>
-              <div className="flex items-center gap-4 border-t border-fecam-black/10 px-6 py-4">
-                <button type="submit" disabled={saving} className="btn-dark !py-2.5 disabled:opacity-70">
-                  {saving && <Loader2Icon className="h-4 w-4 animate-spin" />}
-                  Enregistrer
-                </button>
-                {error && <p className="text-sm font-medium text-red-700">{error}</p>}
-              </div>
-            </motion.form>
+            {error && <p className="mr-auto text-sm font-medium text-red-700" role="alert">{error}</p>}
+            <button type="button" onClick={() => setOpen(false)} disabled={saving} className="btn-ghost !py-2.5">
+              Annuler
+            </button>
+            <button type="submit" form={`form-${table}`} disabled={saving} className="btn-dark !py-2.5 disabled:opacity-70">
+              {saving && <Loader2Icon className="h-4 w-4 animate-spin" />}
+              {editingId ? 'Enregistrer les modifications' : 'Ajouter'}
+            </button>
           </>
-        }
-      </AnimatePresence>
+        }>
+        
+        <form id={`form-${table}`} onSubmit={handleSubmit} className="grid gap-5 sm:grid-cols-2">
+          {fields.map((f) =>
+          <div key={f.key} className={f.fullWidth || f.type === 'textarea' || f.type === 'image' ? 'sm:col-span-2' : ''}>
+              {f.type === 'checkbox' ?
+            <label className="flex items-center gap-3 text-sm font-medium" htmlFor={`f-${f.key}`}>
+                  <input
+                id={`f-${f.key}`}
+                type="checkbox"
+                checked={values[f.key] === 'true'}
+                onChange={(e) => set(f.key, e.target.checked ? 'true' : '')}
+                className="h-4 w-4 accent-fecam-orange" />
+              
+                  {f.label}
+                </label> :
+
+            <label className="text-sm font-medium text-fecam-black/80" htmlFor={`f-${f.key}`}>
+                  {f.label}
+                  {f.required && <span className="text-fecam-orange"> *</span>}
+                </label>
+            }
+              {f.type === 'textarea' ?
+            <textarea id={`f-${f.key}`} required={f.required} rows={4} value={values[f.key] ?? ''} onChange={(e) => set(f.key, e.target.value)} className={inputClass} /> :
+            f.type === 'select' ?
+            <select id={`f-${f.key}`} required={f.required} value={values[f.key] ?? ''} onChange={(e) => set(f.key, e.target.value)} className={inputClass}>
+                  <option value="" disabled>Choisir…</option>
+                  {f.options?.map((o) => <option key={o} value={o}>{o}</option>)}
+                </select> :
+            f.type === 'image' ?
+            <ImageField id={`f-${f.key}`} value={values[f.key] ?? ''} onChange={(v) => set(f.key, v)} /> :
+            f.type === 'checkbox' ?
+            null :
+
+            <input
+              id={`f-${f.key}`}
+              type={f.type ?? 'text'}
+              required={f.required}
+              placeholder={f.placeholder}
+              value={values[f.key] ?? ''}
+              onChange={(e) => set(f.key, e.target.value)}
+              className={inputClass} />
+
+            }
+              {f.hint && <p className="mt-1 text-xs text-fecam-black/50">{f.hint}</p>}
+            </div>
+          )}
+        </form>
+      </Modal>
     </div>);
 
 }

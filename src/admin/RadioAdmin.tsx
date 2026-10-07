@@ -25,6 +25,8 @@ export function RadioAdmin() {
       title="Grille des programmes"
       description="Émissions diffusées sur Radio FECAM, avec leurs jours et horaires de passage."
       table="radio_shows"
+      itemLabel="une émission"
+      describe={(r) => r.title}
       fields={fields}
       fromRow={(row) => ({ ...row, days: row.days.join(', ') } as unknown as Record<string, string>)}
       columns={[

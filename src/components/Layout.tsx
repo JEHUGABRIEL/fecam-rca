@@ -1,8 +1,10 @@
+import { Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { useRadio } from '../contexts/RadioContext';
 import { Footer } from './Footer';
 import { Header } from './Header';
+import { PageLoader } from './LoadingScreen';
 import { RadioBar } from './RadioBar';
 import { easeOut } from './Reveal';
 
@@ -27,7 +29,7 @@ export function Layout() {
           animate={{ opacity: 1, y: 0, transition: { duration: 0.6, ease: easeOut } }}
           exit={{ opacity: 0, transition: { duration: 0.25, ease: 'easeIn' } }}>
           
-          {outlet}
+          <Suspense fallback={<PageLoader />}>{outlet}</Suspense>
         </motion.main>
       </AnimatePresence>
       <Footer />

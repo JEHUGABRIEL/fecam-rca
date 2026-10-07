@@ -1,7 +1,7 @@
 import { query } from './_lib/db.js';
 import { error, json, readJson, serverError } from './_lib/http.js';
-import { isAuthenticated } from './_lib/session.js';
-import { coerce, ValidationError } from './_lib/tables.js';
+import { asAdmin } from './_lib/guard.js';
+import { coerce } from './_lib/tables.js';
 
 // Réglages éditables : liens des réseaux sociaux affichés dans le pied de page
 export const settingKeys = ['facebook', 'instagram', 'youtube', 'tiktok', 'spotify', 'whatsapp'] as const;
@@ -21,22 +21,18 @@ export async function GET() {
 }
 
 // PUT /api/settings — admin : { facebook: "https://…", … }
-export async function PUT(request: Request) {
-  if (!isAuthenticated(request)) return error(401, 'Session expirée, reconnectez-vous.');
-  const body = await readJson(request);
-  if (!body) return error(400, 'Requête invalide');
-  try {
+export function PUT(request: Request) {
+  return asAdmin(request, async () => {
+    const body = await readJson(request);
+    if (!body) return error(400, 'Requête invalide');
     for (const key of settingKeys) {
       if (!(key in body)) continue;
-      const value = (coerce({ name: key, type: 'url' }, body[key]) as string | null) ?? '';
+      const value = (coerce({ name: key, type: 'url', nullable: true }, body[key]) as string | null) ?? '';
       await query(
         'insert into site_settings (key, value) values ($1, $2) on conflict (key) do update set value = excluded.value',
         [key, value]
       );
     }
     return json(await readSettings());
-  } catch (err) {
-    if (err instanceof ValidationError) return error(400, err.message);
-    return serverError(err);
-  }
+  });
 }

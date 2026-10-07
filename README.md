@@ -20,5 +20,12 @@ node scripts/seed.mjs                    # remplit les tables vides avec le cont
 
 ## Back-office
 
-`/admin` — protégé par le mot de passe `ADMIN_PASSWORD`. Variables à définir sur Vercel :
-voir `.env.example`.
+`/admin` — comptes administrateurs (email + mot de passe), gérés dans Paramètres → Administrateurs.
+Créer le premier compte :
+
+```bash
+ADMIN_EMAIL=vous@exemple.org ADMIN_NAME="Votre nom" ADMIN_NEW_PASSWORD='…' \
+  node scripts/create-admin.mjs --sql | psql "$DATABASE_URL"
+```
+
+Variables à définir sur Vercel : voir `.env.example`.

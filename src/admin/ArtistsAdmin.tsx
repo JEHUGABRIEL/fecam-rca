@@ -34,6 +34,8 @@ export function ArtistsAdmin() {
       title="Artistes"
       description="Artistes et groupes membres. Cochez « à la une » pour les mettre en avant sur l’accueil."
       table="artists"
+      itemLabel="un artiste"
+      describe={(a) => a.name}
       fields={fields}
       columns={[
       { key: 'name', label: 'Nom' },

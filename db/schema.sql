@@ -123,3 +123,24 @@ create table if not exists newsletter_subscribers (
   email text not null unique,
   created_at timestamptz not null default now()
 );
+
+-- ─────────────────────────────── Administrateurs ───────────────────────────
+-- Mots de passe hachés avec scrypt (api/_lib/password.ts). session_version est incrémenté
+-- à chaque changement de mot de passe : toutes les sessions ouvertes deviennent invalides.
+create table if not exists admin_users (
+  id text primary key default gen_random_uuid()::text,
+  email text not null unique check (email = lower(email)),
+  name text not null default '',
+  password_hash text not null,
+  session_version int not null default 1,
+  created_at timestamptz not null default now(),
+  last_login_at timestamptz
+);
+
+-- ───────────────────────── Limitation des tentatives ───────────────────────
+-- Compteurs par clé (ex. « login-ip:1.2.3.4 ») sur une fenêtre de temps glissante.
+create table if not exists rate_limits (
+  key text primary key,
+  count int not null,
+  reset_at timestamptz not null
+);
