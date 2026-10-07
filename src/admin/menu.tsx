@@ -1,9 +1,7 @@
-import { ComponentType, lazy } from 'react';
+import { ComponentType } from 'react';
 import { CalendarDaysIcon, LayoutDashboardIcon, NewspaperIcon, RadioIcon, SettingsIcon, UsersIcon } from 'lucide-react';
 
-// Charge une page du back-office à la demande (exports nommés → React.lazy)
-const page = <K extends string>(load: () => Promise<Record<K, ComponentType>>, name: K) =>
-lazy(() => load().then((m) => ({ default: m[name] })));
+import { lazyPage as page } from '../lib/lazyPage';
 
 const events = () => import('./EventsAdmin');
 const inbox = () => import('./InboxPage');

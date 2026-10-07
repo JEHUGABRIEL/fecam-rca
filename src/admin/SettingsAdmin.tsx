@@ -23,7 +23,7 @@ export function SettingsAdmin() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api<SiteSettings>('/api/settings').
+    api<SiteSettings>('/api/settings?admin').
     then(setValues).
     catch((err) => setError(err instanceof ApiError ? err.message : 'Chargement impossible.')).
     finally(() => setLoading(false));

@@ -1,4 +1,4 @@
-import { ComponentType, lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { MotionConfig } from 'framer-motion';
 import { Layout } from './components/Layout';
@@ -6,9 +6,9 @@ import { LoadingScreen } from './components/LoadingScreen';
 import { AdminAuthProvider } from './contexts/AdminAuthContext';
 import { RadioProvider } from './contexts/RadioContext';
 
+import { lazyPage as page } from './lib/lazyPage';
+
 // Chaque page est un fichier JS séparé, chargé à la première visite (écran de chargement entre-temps)
-const page = <K extends string>(load: () => Promise<Record<K, ComponentType>>, name: K) =>
-lazy(() => load().then((m) => ({ default: m[name] })));
 
 const Home = page(() => import('./pages/Home'), 'Home');
 const Events = page(() => import('./pages/Events'), 'Events');
@@ -25,7 +25,13 @@ const AdminLayout = page(() => import('./admin/AdminLayout'), 'AdminLayout');
 const Login = page(() => import('./admin/Login'), 'Login');
 const adminMenu = () => import('./admin/menu');
 const AdminRoutes = lazy(() =>
-adminMenu().then(({ menu, Dashboard }) => ({
+adminMenu().catch((err) => {
+  // Ancienne version en cache : un rechargement (un seul) récupère la nouvelle
+  if (sessionStorage.getItem('fecam-chunk-reload')) throw err;
+  sessionStorage.setItem('fecam-chunk-reload', '1');
+  window.location.reload();
+  return new Promise<never>(() => undefined);
+}).then(({ menu, Dashboard }) => ({
   default: () =>
   <Routes>
         <Route element={<AdminLayout />}>

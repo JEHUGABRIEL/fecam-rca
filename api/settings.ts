@@ -11,8 +11,13 @@ async function readSettings() {
   return Object.fromEntries(settingKeys.map((k) => [k, rows.find((r) => r.key === k)?.value ?? '']));
 }
 
-// GET /api/settings — public
-export async function GET() {
+// GET /api/settings — public (cache CDN 10 s)
+// GET /api/settings?admin — back-office : lecture directe, jamais mise en cache, pour revoir
+// immédiatement ce qui vient d'être enregistré
+export async function GET(request: Request) {
+  if (new URL(request.url).searchParams.has('admin')) {
+    return asAdmin(request, async () => json(await readSettings(), 200, { 'cache-control': 'no-store' }));
+  }
   try {
     return json(await readSettings(), 200, { 'cache-control': 'public, max-age=0, s-maxage=10, must-revalidate' });
   } catch (err) {

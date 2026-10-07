@@ -9,13 +9,19 @@ import { useEvents } from '../hooks/data';
 import { useSubmit } from '../hooks/useSubmit';
 import { Honeypot } from '../components/Honeypot';
 import { MemberCta } from '../components/MemberCta';
+import { LoadError } from '../components/LoadError';
+import { PageLoader } from '../components/LoadingScreen';
 import { formatDateRange, isPastDate } from '../utils/date';
 
 export function EventDetail() {
   const { id } = useParams();
-  const { data: events } = useEvents();
+  const { data: events, loading, failed, refresh } = useEvents();
   const event = events.find((e) => e.id === id);
   const { state, message, submit, reset } = useSubmit('reservations');
+
+  // Tant que la liste charge, l'événement n'est pas « introuvable »
+  if (!event && loading) return <PageLoader />;
+  if (!event && failed) return <LoadError onRetry={refresh} what="cet événement" />;
 
   if (!event) {
     return (

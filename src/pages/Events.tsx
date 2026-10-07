@@ -5,6 +5,8 @@ import { EventRow } from '../components/EventRow';
 import { FilterChips } from '../components/FilterChips';
 import { PageHeader } from '../components/PageHeader';
 import { MemberCta } from '../components/MemberCta';
+import { LoadError } from '../components/LoadError';
+import { PageLoader } from '../components/LoadingScreen';
 import { easeOut } from '../components/Reveal';
 import { eventCategories } from '../data/events';
 import { useEvents } from '../hooks/data';
@@ -13,7 +15,7 @@ import { groupByMonth, isPastDate } from '../utils/date';
 type Period = 'À venir' | 'Passés';
 
 export function Events() {
-  const { data: events } = useEvents();
+  const { data: events, loading, failed, refresh } = useEvents();
   const [period, setPeriod] = useState<Period>('À venir');
   const [category, setCategory] = useState('Tous');
   const [query, setQuery] = useState('');
@@ -72,7 +74,11 @@ export function Events() {
           <FilterChips label="Catégorie" options={['Tous', ...eventCategories]} value={category} onChange={setCategory} />
         </div>
 
-        {groups.length === 0 ?
+        {loading ?
+        <PageLoader /> :
+        failed ?
+        <LoadError onRetry={refresh} what="l’agenda" /> :
+        groups.length === 0 ?
         <div className="py-20 text-center">
             <CalendarXIcon className="mx-auto h-10 w-10 text-fecam-black/35" />
             <p className="mt-4 font-display text-xl font-bold">Aucun événement ne correspond</p>

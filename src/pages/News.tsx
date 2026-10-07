@@ -3,13 +3,15 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FilterChips } from '../components/FilterChips';
 import { PageHeader } from '../components/PageHeader';
 import { MemberCta } from '../components/MemberCta';
+import { LoadError } from '../components/LoadError';
+import { PageLoader } from '../components/LoadingScreen';
 import { easeOut, RevealGroup, revealItem } from '../components/Reveal';
 import { newsCategories } from '../data/news';
 import { useNews } from '../hooks/data';
 import { formatShortDate } from '../utils/date';
 
 export function News() {
-  const { data: news } = useNews();
+  const { data: news, loading, failed, refresh } = useNews();
   const [category, setCategory] = useState('Toutes');
   const filtered = news.filter((n) => category === 'Toutes' || n.category === category);
   const [lead, ...rest] = filtered;
@@ -29,7 +31,11 @@ export function News() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.45, ease: easeOut }}>
 
-            {!lead ?
+            {loading ?
+            <PageLoader /> :
+            failed ?
+            <LoadError onRetry={refresh} what="les actualités" /> :
+            !lead ?
             <p className="py-20 text-center text-fecam-black/60">Aucun article dans cette rubrique pour le moment.</p> :
 
             <>
