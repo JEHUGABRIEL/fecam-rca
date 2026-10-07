@@ -9,8 +9,9 @@ export async function GET(request: Request) {
   if (!def?.publicSelect) return error(404, 'Contenu inconnu');
   try {
     const rows = await query(`select ${def.publicSelect} from ${name} order by ${def.order}`);
-    // Cache CDN court : le contenu modifié dans le back-office apparaît en moins d'une minute
-    return json(rows, 200, { 'cache-control': 'public, s-maxage=30, stale-while-revalidate=300' });
+    // Cache CDN de 10 s, sans resservir de version périmée : une modification faite dans le
+    // back-office apparaît sur le site en 10 secondes au plus
+    return json(rows, 200, { 'cache-control': 'public, max-age=0, s-maxage=10, must-revalidate' });
   } catch (err) {
     return serverError(err);
   }

@@ -14,7 +14,7 @@ async function readSettings() {
 // GET /api/settings — public
 export async function GET() {
   try {
-    return json(await readSettings(), 200, { 'cache-control': 'public, s-maxage=30, stale-while-revalidate=300' });
+    return json(await readSettings(), 200, { 'cache-control': 'public, max-age=0, s-maxage=10, must-revalidate' });
   } catch (err) {
     return serverError(err);
   }
