@@ -7,12 +7,14 @@ export const missions = [
 { title: 'Rassembler', text: 'Fédérer artistes, groupes, associations et structures professionnelles autour d’une voix commune.' }];
 
 
-export const board = [
-{ name: 'Saint Juste Guérembezi', role: 'Président' },
+// Membres du bureau exécutif. Sans photo (image absente), la carte affiche leurs initiales :
+// déposez la photo dans /public et renseignez son chemin.
+export const board: {name: string;role: string;image?: string;}[] = [
+{ name: 'Saint Juste Guérembezi', role: 'Président', image: '/president.jpg' },
 { name: 'Marcelle Kossi', role: 'Vice-présidente, chargée de la communication' },
 { name: 'Serge Yakité', role: 'Secrétaire général' },
 { name: 'Arlette Ndoumba', role: 'Trésorière' },
-{ name: 'Papa Célestin Doko', role: 'Conseiller, formation et patrimoine' }];
+{ name: 'Papa Célestin Doko', role: 'Conseiller, formation et patrimoine', image: '/d0f0cf1f-9342-44fa-9bc3-dce2e8d03a52.jpg' }];
 
 
 export const presidentMessage = {
