@@ -39,8 +39,14 @@ Backend: Vercel serverless functions in `api/` (Web `Request`/`Response` handler
   limits in `rate_limits`: login 10/IP + 5/email per 15 min, public forms 5/IP per 10 min);
   `api/_lib/guard.ts` wraps admin routes; uploads are type-checked by magic bytes; CSP/HSTS and
   noindex headers live in `vercel.json`. Tests with curl must send a matching `Origin` header.
-- `src/hooks/useCollection.ts` reads `/api/content/:table` and **falls back to `src/data`** when
-  the API is unreachable or answers non-JSON, so the public site always renders.
+- `src/hooks/useCollection.ts` reads `/api/content/:table` (one retry). **Only in dev** (`vite`
+  without `/api`) does it fall back to the example data in `src/data`; in production it never
+  does (a deleted item could reappear) and pages show `PageLoader` / `LoadError` instead — handle
+  `loading`/`failed` before rendering "not found" or "empty" states.
+- Caching: public content and `/api/settings` are CDN-cached 10 s (`s-maxage=10, must-revalidate`,
+  no stale-while-revalidate); admin reads are `no-store` (`/api/settings?admin` for the BO).
+- Lazy pages go through `src/lib/lazyPage.ts`: a missing chunk after a deploy triggers one reload.
+  `vercel.json` must keep `assets/` out of the SPA rewrite so stale chunks 404 instead of HTML.
 - `src/hooks/useSubmit.ts` posts public forms; `src/hooks/useAdminTable.ts` admin CRUD (401 →
   `expire()` → redirect to `/admin/connexion`).
 - `src/admin/menu.tsx` defines the sidebar groups and their sub-pages (one route each, lazy-loaded);
