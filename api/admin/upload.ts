@@ -1,6 +1,6 @@
 import { put } from '@vercel/blob';
-import { error, json, serverError } from '../_lib/http';
-import { isAuthenticated } from '../_lib/session';
+import { error, json, serverError } from '../_lib/http.js';
+import { isAuthenticated } from '../_lib/session.js';
 
 const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
 const MAX_BYTES = 4 * 1024 * 1024;

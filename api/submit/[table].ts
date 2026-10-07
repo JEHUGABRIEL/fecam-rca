@@ -1,6 +1,6 @@
-import { query } from '../_lib/db';
-import { error, json, lastSegment, readJson, serverError } from '../_lib/http';
-import { coerce, ident, publicRequired, tables, ValidationError } from '../_lib/tables';
+import { query } from '../_lib/db.js';
+import { error, json, lastSegment, readJson, serverError } from '../_lib/http.js';
+import { coerce, ident, publicRequired, tables, ValidationError } from '../_lib/tables.js';
 
 // POST /api/submit/:table — formulaires publics (adhésion, contact, réservation, dédicace, newsletter)
 export async function POST(request: Request) {

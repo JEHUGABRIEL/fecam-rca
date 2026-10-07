@@ -1,6 +1,6 @@
-import { query } from '../_lib/db';
-import { error, json, lastSegment, serverError } from '../_lib/http';
-import { tables } from '../_lib/tables';
+import { query } from '../_lib/db.js';
+import { error, json, lastSegment, serverError } from '../_lib/http.js';
+import { tables } from '../_lib/tables.js';
 
 // GET /api/content/:table — contenu public du site (événements, actualités, artistes, sorties, radio)
 export async function GET(request: Request) {

@@ -1,5 +1,5 @@
-import { error, json, readJson, serverError } from '../_lib/http';
-import { checkPassword, clearedCookie, isAuthenticated, sessionCookie } from '../_lib/session';
+import { error, json, readJson, serverError } from '../_lib/http.js';
+import { checkPassword, clearedCookie, isAuthenticated, sessionCookie } from '../_lib/session.js';
 
 // GET : la session est-elle valide ?
 export function GET(request: Request) {

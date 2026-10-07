@@ -1,7 +1,7 @@
-import { query } from './_lib/db';
-import { error, json, readJson, serverError } from './_lib/http';
-import { isAuthenticated } from './_lib/session';
-import { coerce, ValidationError } from './_lib/tables';
+import { query } from './_lib/db.js';
+import { error, json, readJson, serverError } from './_lib/http.js';
+import { isAuthenticated } from './_lib/session.js';
+import { coerce, ValidationError } from './_lib/tables.js';
 
 // Réglages éditables : liens des réseaux sociaux affichés dans le pied de page
 export const settingKeys = ['facebook', 'instagram', 'youtube', 'tiktok', 'spotify', 'whatsapp'] as const;
